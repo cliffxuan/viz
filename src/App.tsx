@@ -128,7 +128,8 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
   const graph = parse(data);
   const classes = useStyles();
   const size = graph.tree.length;
-  const height = size * 30;
+  const margin = size > 200 ? 8 : (240 - size) * 0.2;
+  const height = size * margin;
 
   return (
     <div className={classes.root}>
