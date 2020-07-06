@@ -8,7 +8,7 @@ import { PlainObject } from "react-vega/lib/types";
 import AceEditor from "react-ace";
 import firebase from "firebase/app";
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Switch,
   Route,
   Redirect,
@@ -93,7 +93,7 @@ function GraphContainer({ docId }: GraphContainerProps) {
       const doc = await firestore.collection("graphs").doc(docId).get();
       const data = doc.data()?.graph;
       if (!doc.exists || data === null) {
-        setRedirect("/");
+        setRedirect("");
       } else {
         setRedirect(null);
         setData(data.replace(/\\n/gi, "\n"));
