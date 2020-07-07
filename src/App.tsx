@@ -22,22 +22,25 @@ import "ace-builds/src-noconflict/theme-github";
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
-      flexGrow: 1,
     },
     appBar: {
       backgroundColor: "#fff",
       color: "#000",
+      marginBottom: theme.spacing(1),
     },
     saveButton: {
-      marginLeft: theme.spacing(5),
+      marginLeft: theme.spacing(6),
     },
-    title: {
-      flexGrow: 1,
+    main: {
     },
     paper: {
       padding: theme.spacing(1),
       color: theme.palette.text.secondary,
+      height: "90vh",
+    },
+    graph: {
       height: "100%",
+      overflow: "auto"
     },
   })
 );
@@ -133,36 +136,36 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
 
   return (
     <div className={classes.root}>
-      <Grid container spacing={1}>
-        <AppBar position="static" className={classes.appBar}>
-          <Toolbar>
-            <Typography variant="h6">Visualize Hierarchical Data</Typography>
-            <Button
-              className={classes.saveButton}
-              onClick={() => handleSave(data)}
-            >
-              <SaveOutlinedIcon />
-              save
-            </Button>
-          </Toolbar>
-        </AppBar>
+      <AppBar position="static" className={classes.appBar}>
+        <Toolbar>
+          <Typography variant="h6">Visualize Hierarchical Data</Typography>
+          <Button
+            className={classes.saveButton}
+            onClick={() => handleSave(data)}
+          >
+            <SaveOutlinedIcon />
+            save
+          </Button>
+        </Toolbar>
+      </AppBar>
+      <Grid container spacing={1} className={classes.main}>
         <Grid item xs={4}>
-          <Paper className={classes.paper}>
+          <Paper variant="outlined" className={classes.paper} square>
             <AceEditor
               mode="plain_text"
               placeholder="Root -> Parent -> Child;"
-              maxLines={100}
               minLines={55}
               theme="github"
               onChange={(value) => handleChange(value)}
               value={data}
               width="100%"
+              height="100%"
             />
           </Paper>
         </Grid>
         <Grid item xs={8}>
-          <Paper className={classes.paper}>
-            <Vega spec={{ ...treeSpec, height }} data={graph as PlainObject} />
+          <Paper variant="outlined" className={classes.paper} square>
+            <Vega spec={{ ...treeSpec, height }} data={graph as PlainObject} className={classes.graph}/>
           </Paper>
         </Grid>
       </Grid>
