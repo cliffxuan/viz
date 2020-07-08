@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
+import {
+  Grid,
+  Paper,
+  AppBar,
+  Toolbar,
+  Button,
+  useMediaQuery,
+  useTheme,
+} from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
 import { PlainObject } from "react-vega/lib/types";
@@ -19,31 +27,43 @@ import { parse } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-    },
+const useStyles = makeStyles((theme: Theme) => {
+  return createStyles({
+    root: {},
     appBar: {
       backgroundColor: "#fff",
       color: "#000",
-      marginBottom: theme.spacing(1),
     },
     saveButton: {
       marginLeft: theme.spacing(6),
     },
     main: {
+      flexDirection: "row-reverse",
     },
     paper: {
       padding: theme.spacing(1),
       color: theme.palette.text.secondary,
-      height: "90vh",
+      height: "300px",
     },
     graph: {
+      maxWidth: "90%",
       height: "100%",
-      overflow: "auto"
+      overflow: "auto",
     },
-  })
-);
+    "@media (min-width: 960px)": {
+      paper: {
+        height: "90vh"
+      }
+    }
+  });
+});
+
+function MyComponent() {
+  const theme = useTheme();
+  const twoColumns = useMediaQuery(theme.breakpoints.up("md"));
+
+  return <span>{`two columns: ${twoColumns}`}</span>;
+}
 
 // Initialize Firebase
 firebase.initializeApp({
@@ -148,13 +168,21 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Grid container spacing={1} className={classes.main}>
-        <Grid item xs={4}>
+      <Grid container spacing={0} className={classes.main}>
+        <Grid item xs={12} md={8}>
+          <Paper variant="outlined" className={classes.paper} square>
+            <Vega
+              spec={{ ...treeSpec, height }}
+              data={graph as PlainObject}
+              className={classes.graph}
+            />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4}>
           <Paper variant="outlined" className={classes.paper} square>
             <AceEditor
               mode="plain_text"
               placeholder="Root -> Parent -> Child;"
-              minLines={55}
               theme="github"
               onChange={(value) => handleChange(value)}
               value={data}
@@ -163,12 +191,8 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
             />
           </Paper>
         </Grid>
-        <Grid item xs={8}>
-          <Paper variant="outlined" className={classes.paper} square>
-            <Vega spec={{ ...treeSpec, height }} data={graph as PlainObject} className={classes.graph}/>
-          </Paper>
-        </Grid>
       </Grid>
+      <MyComponent />
     </div>
   );
 }
