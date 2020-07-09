@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import {
-  Grid,
-  Paper,
-  AppBar,
-  Toolbar,
-  Button,
-  useMediaQuery,
-  useTheme,
-} from "@material-ui/core";
+import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
 import { PlainObject } from "react-vega/lib/types";
@@ -29,7 +21,11 @@ import "ace-builds/src-noconflict/theme-github";
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
-    root: {},
+    root: {
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+    },
     appBar: {
       backgroundColor: "#fff",
       color: "#000",
@@ -38,32 +34,21 @@ const useStyles = makeStyles((theme: Theme) => {
       marginLeft: theme.spacing(6),
     },
     main: {
+      flexGrow: 1,
       flexDirection: "row-reverse",
+      overflow: "auto",
+      padding: theme.spacing(1),
+    },
+    pane: {
+      height: "100%",
     },
     paper: {
-      padding: theme.spacing(1),
       color: theme.palette.text.secondary,
-      height: "300px",
-    },
-    graph: {
-      maxWidth: "90%",
       height: "100%",
       overflow: "auto",
     },
-    "@media (min-width: 960px)": {
-      paper: {
-        height: "90vh"
-      }
-    }
   });
 });
-
-function MyComponent() {
-  const theme = useTheme();
-  const twoColumns = useMediaQuery(theme.breakpoints.up("md"));
-
-  return <span>{`two columns: ${twoColumns}`}</span>;
-}
 
 // Initialize Firebase
 firebase.initializeApp({
@@ -135,7 +120,6 @@ function GraphContainer({ docId }: GraphContainerProps) {
       handleSave={async (data) => {
         const id = makeid(6);
         await firestore.collection("graphs").doc(id).set({ graph: data });
-        setRedirect(id);
       }}
     />
   );
@@ -148,11 +132,11 @@ type GraphProps = {
 };
 
 function Graph({ data, handleChange, handleSave }: GraphProps) {
-  const graph = parse(data);
   const classes = useStyles();
+  const graph = parse(data);
   const size = graph.tree.length;
-  const margin = size > 200 ? 8 : (240 - size) * 0.2;
-  const height = size * margin;
+  const space = size > 200 ? 7 : (235 - size) * 0.2;
+  const height = size * space;
 
   return (
     <div className={classes.root}>
@@ -168,17 +152,13 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           </Button>
         </Toolbar>
       </AppBar>
-      <Grid container spacing={0} className={classes.main}>
-        <Grid item xs={12} md={8}>
+      <Grid container spacing={1} className={classes.main}>
+        <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <Vega
-              spec={{ ...treeSpec, height }}
-              data={graph as PlainObject}
-              className={classes.graph}
-            />
+            <Vega spec={{ ...treeSpec, height }} data={graph as PlainObject} />
           </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={4} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
             <AceEditor
               mode="plain_text"
@@ -192,7 +172,6 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           </Paper>
         </Grid>
       </Grid>
-      <MyComponent />
     </div>
   );
 }
