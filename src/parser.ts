@@ -6,9 +6,7 @@ export interface Vertex {
   parent?: number;
 }
 
-export type Tree = {
-  tree: Array<Vertex>;
-};
+export type Tree = Array<Vertex>;
 
 export function toPairs(chain: string): Array<Array<string>> {
   const nodes = chain.split("->").map((x: string) => x.trim());
@@ -37,5 +35,5 @@ export function parse(graph: string): Tree {
     nameToId[child] = childId;
     tree.push({ id: childId, name: child, parent: parentId });
   }
-  return { tree };
+  return tree;
 }

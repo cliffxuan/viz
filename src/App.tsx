@@ -4,7 +4,6 @@ import Typography from "@material-ui/core/Typography";
 import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
-import { PlainObject } from "react-vega/lib/types";
 import AceEditor from "react-ace";
 import firebase from "firebase/app";
 import {
@@ -15,7 +14,7 @@ import {
 } from "react-router-dom";
 import "firebase/firestore";
 import treeSpec from "./Tree";
-import { parse } from "./parser";
+import { parse, Tree } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
 
@@ -133,8 +132,8 @@ type GraphProps = {
 
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
-  const graph = parse(data);
-  const size = graph.tree.length;
+  const tree: Tree = parse(data);
+  const size = tree.length;
   const space = size > 200 ? 7 : (235 - size) * 0.2;
   const height = size * space;
 
@@ -155,7 +154,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
       <Grid container spacing={1} className={classes.main}>
         <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <Vega spec={{ ...treeSpec, height }} data={graph as PlainObject} />
+            <Vega spec={{ ...treeSpec, height }} data={{tree}} />
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>
