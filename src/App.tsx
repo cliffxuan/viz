@@ -133,6 +133,8 @@ type GraphProps = {
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
   const tree: Tree = parse(data);
+  const depth = tree.depth();
+  const width = 120 * depth;
   const size = tree.size();
   const space = size > 200 ? 7 : (235 - size) * 0.2;
   const height = size * space;
@@ -154,7 +156,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
       <Grid container spacing={1} className={classes.main}>
         <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <Vega spec={{ ...treeSpec, height }} data={{tree: tree.spec()}} />
+            <Vega spec={{ ...treeSpec, width, height }} data={{tree: tree.data()}} />
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>
