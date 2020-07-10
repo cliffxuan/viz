@@ -2,15 +2,16 @@ import { parse } from "./parser";
 
 test("parse graph basic", () => {
   const tree = parse("A -> B");
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
   ]);
+  expect(tree.depth()).toEqual(2);
 });
 
 test("parse graph basic with semi colon", () => {
   const tree = parse("A -> B;");
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
   ]);
@@ -18,7 +19,7 @@ test("parse graph basic with semi colon", () => {
 
 test("parse graph two pairs", () => {
   const tree = parse(["A -> B;", "A -> C;"].join("\n"));
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 0 },
@@ -27,16 +28,25 @@ test("parse graph two pairs", () => {
 
 test("parse graph two levels", () => {
   const tree = parse(["A -> B;", "B -> C;"].join("\n"));
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
   ]);
 });
 
+test("parse graph two levels reversed", () => {
+  const tree = parse(["B -> C;", "A -> B;"].join("\n"));
+  expect(tree.spec()).toEqual([
+    { id: 0, name: "B", parent: 2 },
+    { id: 1, name: "C", parent: 0 },
+    { id: 2, name: "A" },
+  ]);
+});
+
 test("parse graph two levels chained", () => {
   const tree = parse(["A -> B -> C;"].join("\n"));
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
@@ -45,7 +55,7 @@ test("parse graph two levels chained", () => {
 
 test("parse graph no semi colon", () => {
   const tree = parse(["A -> B", "B -> C"].join("\n"));
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
@@ -61,7 +71,7 @@ test("parse graph repeated link", () => {
       "Root -> B -> B1;",
     ].join("\n")
   );
-  expect(tree).toEqual([
+  expect(tree.spec()).toEqual([
     { id: 0, name: "Root" },
     { id: 1, name: "A", parent: 0 },
     { id: 2, name: "A0", parent: 1 },
