@@ -1,8 +1,27 @@
 import { concat, apply, zip, slice, uniq, values } from "ramda";
 
 export class Vertex {
-  constructor(public id: number, public name: string, public parent?: Vertex) {}
+  id: number;
+  name: string;
+  parent: Vertex | null;
+  children: Array<Vertex>;
+
+  constructor(
+    id: number,
+    name: string,
+    parent?: Vertex,
+    children?: Array<Vertex>
+  ) {
+    this.id = id;
+    this.name = name;
+    this.parent = parent ?? null;
+    this.children = children ?? ([] as Vertex[]);
+  }
+
   depth(cache?: Record<number, number>): number {
+    if (!this.isAcyclic) {
+      return Infinity;
+    }
     if (cache !== undefined) {
       const cachedValue = cache[this.id];
       if (cachedValue !== undefined) {
@@ -10,27 +29,73 @@ export class Vertex {
       }
     }
     // TODO cyclic
-    const result = this.parent ? this.parent.depth(cache) + 1: 1;
+    const result = this.parent ? this.parent.depth(cache) + 1 : 1;
     if (cache !== undefined) {
       cache[this.id] = result;
     }
     return result;
   }
+
+  pathTo(vertex: Vertex, visited?: Array<Vertex>): Array<Vertex> | null {
+    if (visited === undefined) {
+      visited = [] as Vertex[];
+    }
+    if (this.children.length === 0) {
+      return null;
+    }
+    for (let child of this.children) {
+      if (child === vertex) {
+        return [this, child] as Vertex[];
+      }
+      if (visited.includes(child)) {
+        return null;
+      }
+      visited.push(child);
+      const childPath = child.pathTo(vertex, visited); // recursive
+      if (childPath === null) {
+        continue;
+      } else {
+        return [this as Vertex].concat(childPath);
+      }
+    }
+    return null;
+  }
+
+  get isAcyclic(): boolean {
+    if (this.pathTo(this) !== null) {
+      return false;
+    }
+    for (let child of this.children) {
+      if (!child.isAcyclic) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 export class Tree {
   vertices: Array<Vertex>;
+
   constructor(vertices: Array<Vertex>) {
     this.vertices = vertices;
   }
+
   get depth(): number {
+    if (!this.isAcyclic) {
+      return Infinity;
+    }
     const cache = {};
-    return apply(Math.max, this.vertices.map(v => v.depth(cache)));
+    return apply(
+      Math.max,
+      this.vertices.map((v) => v.depth(cache))
+    );
   }
-  get size(): number {
-    // TODO number of leaves only
-    return this.vertices.length;
+
+  get breadth(): number {
+    return this.vertices.filter((v) => v.children.length === 0).length;
   }
+
   get data(): Array<{ id: number; name: string; parent?: number }> {
     return this.vertices.map((v: Vertex) => ({
       id: v.id,
@@ -38,15 +103,22 @@ export class Tree {
       parent: v.parent?.id,
     }));
   }
+
   get roots(): Array<Vertex> {
-    return this.vertices.filter(v => v.parent === undefined);
+    return this.vertices.filter((v) => v.parent === null);
   }
+
   get isAcyclic(): boolean {
-    if (this.roots.length === 0) {
-      return true
+    if (this.vertices.length === 0) {
+      return true;
     }
-    // TODO implement
-    return false
+    if (this.roots.length === 0) {
+      return false;
+    }
+    if (this.roots.length === 1) {
+      return this.roots[0].isAcyclic;
+    }
+    return true;
   }
 }
 
@@ -66,19 +138,25 @@ export function parse(graph: string): Tree {
     .reduce(concat, []);
   const nameToVertex: Record<string, Vertex> = {};
   let id = -1;
-  for (const [parent, child] of uniq(pairs)) {
-    let parentId = nameToVertex[parent]?.id;
+  for (const [parentName, childName] of uniq(pairs)) {
+    let parentId = nameToVertex[parentName]?.id;
+    let childId = nameToVertex[childName]?.id;
+
     if (parentId === undefined) {
       parentId = ++id;
-      nameToVertex[parent] = new Vertex(parentId, parent);
+      nameToVertex[parentName] = new Vertex(parentId, parentName);
     }
-    let childId = nameToVertex[child]?.id;
     if (childId === undefined) {
       childId = ++id;
-      nameToVertex[child] = new Vertex(childId, child, nameToVertex[parent]);
+      nameToVertex[childName] = new Vertex(
+        childId,
+        childName,
+        nameToVertex[parentName]
+      );
     } else {
-      nameToVertex[child].parent = nameToVertex[parent];
+      nameToVertex[childName].parent = nameToVertex[parentName];
     }
+    nameToVertex[parentName].children.push(nameToVertex[childName]);
   }
   return new Tree(values(nameToVertex));
 }

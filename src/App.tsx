@@ -134,10 +134,10 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
   const tree: Tree = parse(data);
   const depth = tree.depth;
-  const width = 120 * depth;
-  const size = tree.size;
-  const space = size > 200 ? 7 : (235 - size) * 0.2;
-  const height = size * space;
+  const width = depth === Infinity ? 600 : 120 * depth;
+  const breadth = tree.breadth;
+  const space = breadth > 200 ? 7 : (235 - breadth) * 0.2;
+  const height = breadth * space;
 
   return (
     <div className={classes.root}>

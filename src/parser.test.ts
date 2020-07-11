@@ -1,4 +1,5 @@
-import { parse, Vertex } from "./parser";
+import { parse } from "./parser";
+import each from "jest-each";
 
 test("parse graph basic", () => {
   const tree = parse("A -> B");
@@ -6,8 +7,9 @@ test("parse graph basic", () => {
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(2);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph basic with semi colon", () => {
@@ -16,8 +18,9 @@ test("parse graph basic with semi colon", () => {
     { id: 0, name: "A" },
     { id: 1, name: "B", parent: 0 },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(2);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph two pairs", () => {
@@ -27,8 +30,9 @@ test("parse graph two pairs", () => {
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 0 },
   ]);
+  expect(tree.breadth).toEqual(2);
   expect(tree.depth).toEqual(2);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph two levels", () => {
@@ -38,8 +42,9 @@ test("parse graph two levels", () => {
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(3);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph two levels reversed", () => {
@@ -49,8 +54,9 @@ test("parse graph two levels reversed", () => {
     { id: 1, name: "C", parent: 0 },
     { id: 2, name: "A" },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(3);
-  expect(tree.roots).toEqual([new Vertex(2, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph two levels chained", () => {
@@ -60,8 +66,9 @@ test("parse graph two levels chained", () => {
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(3);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph no semi colon", () => {
@@ -71,8 +78,9 @@ test("parse graph no semi colon", () => {
     { id: 1, name: "B", parent: 0 },
     { id: 2, name: "C", parent: 1 },
   ]);
+  expect(tree.breadth).toEqual(1);
   expect(tree.depth).toEqual(3);
-  expect(tree.roots).toEqual([new Vertex(0, "A")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
 });
 
 test("parse graph repeated link", () => {
@@ -93,6 +101,46 @@ test("parse graph repeated link", () => {
     { id: 5, name: "B0", parent: 4 },
     { id: 6, name: "B1", parent: 4 },
   ]);
+  expect(tree.breadth).toEqual(4);
   expect(tree.depth).toEqual(3);
-  expect(tree.roots).toEqual([new Vertex(0, "Root")]);
+  expect(tree.roots.map((v) => v.name)).toEqual(["Root"]);
+});
+
+test("parse cycle", () => {
+  const cycle = parse(["A -> B;", "B -> A;"].join("\n"));
+  expect(cycle.breadth).toEqual(0);
+  expect(cycle.depth).toEqual(Infinity);
+});
+
+describe("is acyclic", () => {
+  each([
+    [[], true],
+    [["A -> B;", "B -> A;"], false],
+    [["A -> B;"], true],
+    [["A -> B;", "B -> C;", "C -> B;"], false],
+    [["A -> B;", "A -> C;", "B -> C;"], true],
+    [["A -> B;", "B -> C;", "C -> A;"], false],
+  ]).test("%s is acyclic? %s", (edges, isAcyclic) => {
+    const tree = parse(edges.join("\n"));
+    expect(tree.isAcyclic).toBe(isAcyclic);
+  });
+});
+
+describe("pathTo", () => {
+  each([
+    [["A -> B;"], "A", "B", ["A", "B"]],
+    [["A -> B -> C;"], "A", "C", ["A", "B", "C"]],
+    [["A -> B -> C;"], "A", "C", ["A", "B", "C"]],
+    [["A -> B -> A;"], "A", "A", ["A", "B", "A"]],
+    [["A -> B;", "A -> C;"], "B", "C", null],
+  ]).test("in graph %s start from %s to %s with path %s", (edges, start, end, path) => {
+    const tree = parse(edges.join("\n"));
+    const firstV = tree.vertices.filter(v => v.name === start)[0];
+    const lastV = tree.vertices.filter(v => v.name === end)[0];
+    if (path === null) {
+      expect(firstV.pathTo(lastV)).toEqual(null);
+    } else {
+      expect((firstV.pathTo(lastV) ?? []).map(v => v.name)).toEqual(path);
+    }
+  });
 });
