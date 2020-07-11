@@ -9,6 +9,7 @@ export class Vertex {
         return cachedValue;
       }
     }
+    // TODO cyclic
     const result = this.parent ? this.parent.depth(cache) + 1: 1;
     if (cache !== undefined) {
       cache[this.id] = result;
@@ -22,19 +23,30 @@ export class Tree {
   constructor(vertices: Array<Vertex>) {
     this.vertices = vertices;
   }
-  depth(): number {
+  get depth(): number {
     const cache = {};
     return apply(Math.max, this.vertices.map(v => v.depth(cache)));
   }
-  size(): number {
+  get size(): number {
+    // TODO number of leaves only
     return this.vertices.length;
   }
-  data(): Array<{ id: number; name: string; parent?: number }> {
+  get data(): Array<{ id: number; name: string; parent?: number }> {
     return this.vertices.map((v: Vertex) => ({
       id: v.id,
       name: v.name,
       parent: v.parent?.id,
     }));
+  }
+  get roots(): Array<Vertex> {
+    return this.vertices.filter(v => v.parent === undefined);
+  }
+  get isAcyclic(): boolean {
+    if (this.roots.length === 0) {
+      return true
+    }
+    // TODO implement
+    return false
   }
 }
 
