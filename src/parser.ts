@@ -2,8 +2,18 @@ import { concat, apply, zip, slice, uniq, values } from "ramda";
 
 export class Vertex {
   constructor(public id: number, public name: string, public parent?: Vertex) {}
-  depth(): number {
-    return this.parent ? this.parent.depth() + 1: 1;
+  depth(cache?: Record<number, number>): number {
+    if (cache !== undefined) {
+      const cachedValue = cache[this.id];
+      if (cachedValue !== undefined) {
+        return cachedValue;
+      }
+    }
+    const result = this.parent ? this.parent.depth(cache) + 1: 1;
+    if (cache !== undefined) {
+      cache[this.id] = result;
+    }
+    return result;
   }
 }
 
@@ -13,7 +23,8 @@ export class Tree {
     this.vertices = vertices;
   }
   depth(): number {
-    return apply(Math.max, this.vertices.map(v => v.depth()));
+    const cache = {};
+    return apply(Math.max, this.vertices.map(v => v.depth(cache)));
   }
   size(): number {
     return this.vertices.length;
