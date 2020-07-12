@@ -14,7 +14,7 @@ import {
 } from "react-router-dom";
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
-import { parse, Tree } from "./parser";
+import { parse, DirectedGraph } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
 
@@ -132,7 +132,7 @@ type GraphProps = {
 
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
-  const tree: Tree = parse(data);
+  const tree: DirectedGraph = parse(data);
   const depth = tree.depth;
   const width = depth === Infinity ? 600 : 120 * depth;
   const breadth = tree.breadth;

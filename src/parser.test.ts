@@ -144,3 +144,17 @@ describe("pathTo", () => {
     }
   });
 });
+
+describe("isTree", () => {
+  each([
+    [["A -> B;"], true],
+    [["A -> B -> C;"], true],
+    [["A -> B -> C;", "B -> D;"], true],
+    [["A0 -> B -> C;", "A1 -> C;"], false],
+    [["A -> B -> C;", "C -> B;"], false],
+    [["A -> B;", "B -> A;"], false],
+  ]).test("directed graph %s is a tree? %s", (arrows, isTree) => {
+    const graph = parse(arrows.join("\n"));
+    expect(graph.isTree).toBe(isTree)
+  });
+});

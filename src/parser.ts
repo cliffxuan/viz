@@ -3,19 +3,19 @@ import { concat, apply, zip, slice, uniq, values } from "ramda";
 export class Vertex {
   id: number;
   name: string;
-  parent: Vertex | null;
-  children: Array<Vertex>;
+  predecessors: Array<Vertex>;
+  successors: Array<Vertex>;
 
   constructor(
     id: number,
     name: string,
-    parent?: Vertex,
-    children?: Array<Vertex>
+    predecessors?: Array<Vertex>,
+    successors?: Array<Vertex>
   ) {
     this.id = id;
     this.name = name;
-    this.parent = parent ?? null;
-    this.children = children ?? ([] as Vertex[]);
+    this.predecessors = predecessors ?? ([] as Vertex[]);
+    this.successors = successors ?? ([] as Vertex[]);
   }
 
   depth(cache?: Record<number, number>): number {
@@ -29,7 +29,12 @@ export class Vertex {
       }
     }
     // TODO cyclic
-    const result = this.parent ? this.parent.depth(cache) + 1 : 1;
+    const result = this.predecessors.length > 0
+      ? apply(
+          Math.min,
+          this.predecessors.map((v) => v.depth(cache))
+        ) + 1
+      : 1;
     if (cache !== undefined) {
       cache[this.id] = result;
     }
@@ -40,22 +45,22 @@ export class Vertex {
     if (visited === undefined) {
       visited = [] as Vertex[];
     }
-    if (this.children.length === 0) {
+    if (this.successors.length === 0) {
       return null;
     }
-    for (let child of this.children) {
-      if (child === vertex) {
-        return [this, child] as Vertex[];
+    for (let successor of this.successors) {
+      if (successor === vertex) {
+        return [this, successor] as Vertex[];
       }
-      if (visited.includes(child)) {
+      if (visited.includes(successor)) {
         return null;
       }
-      visited.push(child);
-      const childPath = child.pathTo(vertex, visited); // recursive
-      if (childPath === null) {
+      visited.push(successor);
+      const successorPath = successor.pathTo(vertex, visited); // recursive
+      if (successorPath === null) {
         continue;
       } else {
-        return [this as Vertex].concat(childPath);
+        return [this as Vertex].concat(successorPath);
       }
     }
     return null;
@@ -65,8 +70,8 @@ export class Vertex {
     if (this.pathTo(this) !== null) {
       return false;
     }
-    for (let child of this.children) {
-      if (!child.isAcyclic) {
+    for (let successor of this.successors) {
+      if (!successor.isAcyclic) {
         return false;
       }
     }
@@ -74,7 +79,7 @@ export class Vertex {
   }
 }
 
-export class Tree {
+export class DirectedGraph {
   vertices: Array<Vertex>;
 
   constructor(vertices: Array<Vertex>) {
@@ -93,19 +98,32 @@ export class Tree {
   }
 
   get breadth(): number {
-    return this.vertices.filter((v) => v.children.length === 0).length;
+    return this.vertices.filter((v) => v.successors.length === 0).length;
   }
 
-  get data(): Array<{ id: number; name: string; parent?: number }> {
-    return this.vertices.map((v: Vertex) => ({
-      id: v.id,
-      name: v.name,
-      parent: v.parent?.id,
-    }));
+  get data(): Array<{ id: number; name: string; predecessors?: number }> {
+    if (this.isTree) {
+      return this.vertices.map((v: Vertex) => ({
+        id: v.id,
+        name: v.name,
+        parent: v.predecessors[0]?.id,
+      }));
+    }
+    return []; // TODO return directed graph
   }
 
   get roots(): Array<Vertex> {
-    return this.vertices.filter((v) => v.parent === null);
+    return this.vertices.filter((v) => v.predecessors.length === 0);
+  }
+
+  get isTree(): boolean {
+    if (this.roots.length !== 1) {
+      return false;
+    }
+    if (this.vertices.filter(v => v.predecessors.length > 1).length > 0) {
+      return false;
+    }
+    return true;
   }
 
   get isAcyclic(): boolean {
@@ -127,7 +145,7 @@ export function toPairs(chain: string): Array<Array<string>> {
   return zip(nodes, slice(1, Infinity, nodes));
 }
 
-export function parse(graph: string): Tree {
+export function parse(graph: string): DirectedGraph {
   const pairs = graph
     .split("\n")
     .map((row) => row.split(";"))
@@ -138,25 +156,28 @@ export function parse(graph: string): Tree {
     .reduce(concat, []);
   const nameToVertex: Record<string, Vertex> = {};
   let id = -1;
-  for (const [parentName, childName] of uniq(pairs)) {
-    let parentId = nameToVertex[parentName]?.id;
-    let childId = nameToVertex[childName]?.id;
+  for (const [predecessorName, successorName] of uniq(pairs)) {
+    let predecessorId = nameToVertex[predecessorName]?.id;
+    let successorId = nameToVertex[successorName]?.id;
 
-    if (parentId === undefined) {
-      parentId = ++id;
-      nameToVertex[parentName] = new Vertex(parentId, parentName);
+    if (predecessorId === undefined) {
+      predecessorId = ++id;
+      nameToVertex[predecessorName] = new Vertex(
+        predecessorId,
+        predecessorName
+      );
     }
-    if (childId === undefined) {
-      childId = ++id;
-      nameToVertex[childName] = new Vertex(
-        childId,
-        childName,
-        nameToVertex[parentName]
+    if (successorId === undefined) {
+      successorId = ++id;
+      nameToVertex[successorName] = new Vertex(
+        successorId,
+        successorName,
+        [nameToVertex[predecessorName]] as Vertex[]
       );
     } else {
-      nameToVertex[childName].parent = nameToVertex[parentName];
+      nameToVertex[successorName].predecessors.push(nameToVertex[predecessorName]);
     }
-    nameToVertex[parentName].children.push(nameToVertex[childName]);
+    nameToVertex[predecessorName].successors.push(nameToVertex[successorName]);
   }
-  return new Tree(values(nameToVertex));
+  return new DirectedGraph(values(nameToVertex));
 }
