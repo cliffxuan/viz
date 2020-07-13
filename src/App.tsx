@@ -141,7 +141,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
 
   return (
     <div className={classes.root}>
-      <AppBar position="static" className={classes.appBar}>
+      <AppBar position="static" className={classes.appBar} elevation={1}>
         <Toolbar>
           <Typography variant="h6">Visualize Hierarchical Data</Typography>
           <Button

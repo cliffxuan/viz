@@ -153,6 +153,7 @@ describe("isTree", () => {
     [["A0 -> B -> C;", "A1 -> C;"], false],
     [["A -> B -> C;", "C -> B;"], false],
     [["A -> B;", "B -> A;"], false],
+    [["A -> B;", "C -> D;"], false],
   ]).test("directed graph %s is a tree? %s", (arrows, isTree) => {
     const graph = parse(arrows.join("\n"));
     expect(graph.isTree).toBe(isTree)
