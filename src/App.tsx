@@ -136,7 +136,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
   const depth = tree.depth;
   const width = depth === Infinity ? 600 : 120 * depth;
   const breadth = tree.breadth;
-  const space = breadth > 200 ? 7 : (235 - breadth) * 0.2;
+  const space = 30 * Math.E ** (-breadth/40) + 7;
   const height = breadth * space;
 
   return (
