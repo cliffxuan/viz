@@ -132,12 +132,7 @@ type GraphProps = {
 
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
-  const tree: DirectedGraph = parse(data);
-  const depth = tree.depth;
-  const width = depth === Infinity ? 600 : 120 * depth;
-  const breadth = tree.breadth;
-  const space = 30 * Math.E ** (-breadth/40) + 7;
-  const height = breadth * space;
+  const multiTrees: DirectedGraph = parse(data);
 
   return (
     <div className={classes.root}>
@@ -156,7 +151,26 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
       <Grid container spacing={1} className={classes.main}>
         <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <Vega spec={{ ...treeSpec, width, height }} data={{tree: tree.data}} />
+            <>
+              {multiTrees.roots.map((root, index) => {
+                const cache = {};
+                const depth = root.descendants.map(v => v.depth(cache)).sort((a, b) => b - a)[0];
+                const width = depth === Infinity ? 600 : 120 * depth;
+                const breadth = root.descendants.map(
+                  (v) => v.successors.length === 0
+                ).length;
+                const space = 30 * Math.E ** (-breadth / 40) + 7;
+                const height = breadth * space;
+                console.log("width:", width, "height:", height);
+                return (
+                  <Vega
+                    key={index}
+                    spec={{ ...treeSpec, width, height }}
+                    data={{ tree: multiTrees.data[index] }}
+                  />
+                );
+              })}
+            </>
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>

@@ -133,16 +133,19 @@ describe("pathTo", () => {
     [["A -> B -> C;"], "A", "C", ["A", "B", "C"]],
     [["A -> B -> A;"], "A", "A", ["A", "B", "A"]],
     [["A -> B;", "A -> C;"], "B", "C", null],
-  ]).test("in graph %s start from %s to %s with path %s", (edges, start, end, path) => {
-    const tree = parse(edges.join("\n"));
-    const firstV = tree.vertices.filter(v => v.name === start)[0];
-    const lastV = tree.vertices.filter(v => v.name === end)[0];
-    if (path === null) {
-      expect(firstV.pathTo(lastV)).toEqual(null);
-    } else {
-      expect((firstV.pathTo(lastV) ?? []).map(v => v.name)).toEqual(path);
+  ]).test(
+    "in graph %s start from %s to %s with path %s",
+    (edges, start, end, path) => {
+      const tree = parse(edges.join("\n"));
+      const firstV = tree.vertices.filter((v) => v.name === start)[0];
+      const lastV = tree.vertices.filter((v) => v.name === end)[0];
+      if (path === null) {
+        expect(firstV.pathTo(lastV)).toEqual(null);
+      } else {
+        expect((firstV.pathTo(lastV) ?? []).map((v) => v.name)).toEqual(path);
+      }
     }
-  });
+  );
 });
 
 describe("isTree", () => {
@@ -156,6 +159,41 @@ describe("isTree", () => {
     [["A -> B;", "C -> D;"], false],
   ]).test("directed graph %s is a tree? %s", (arrows, isTree) => {
     const graph = parse(arrows.join("\n"));
-    expect(graph.isTree).toBe(isTree)
+    expect(graph.isTree).toBe(isTree);
+  });
+});
+
+describe("isMultiTree", () => {
+  each([
+    [["A -> B;"], false],
+    [["A -> B -> C;"], false],
+    [["A -> B -> C;", "B -> D;"], false],
+    [["A0 -> B -> C;", "A1 -> C;"], false],
+    [["A -> B -> C;", "C -> B;"], false],
+    [["A -> B;", "B -> A;"], false],
+    [["A -> B;", "C -> D;"], true],
+    [["A -> B;", "A -> C", "D -> E;"], true],
+  ]).test("directed graph %s has multiple trees? %s", (arrows, isMultiTree) => {
+    const graph = parse(arrows.join("\n"));
+    expect(graph.isMultiTree).toBe(isMultiTree);
+  });
+});
+
+describe("isDescendant", () => {
+  each([
+    ["Root", "Root", true],
+    ["A", "Root", true],
+    ["A0", "Root", true],
+  ]).test("%s is a descendant of %s? %s", (vx, vy, isDescendant) => {
+    const arrows = [
+      "Root -> A -> A0;",
+      "A -> A1;",
+      "Root -> B -> B0;",
+      "B -> B1;",
+    ];
+    const graph = parse(arrows.join("\n"));
+    const vX = graph.vertices.filter((v) => v.name === vx)[0];
+    const vY = graph.vertices.filter((v) => v.name === vy)[0];
+    expect(vX.isDescendant(vY)).toBe(isDescendant);
   });
 });

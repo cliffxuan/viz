@@ -1,4 +1,4 @@
-import { concat, apply, zip, slice, uniq, values } from "ramda";
+import { concat, apply, flatten, zip, slice, uniq, values } from "ramda";
 
 export class Vertex {
   id: number;
@@ -29,12 +29,13 @@ export class Vertex {
       }
     }
     // TODO cyclic
-    const result = this.predecessors.length > 0
-      ? apply(
-          Math.min,
-          this.predecessors.map((v) => v.depth(cache))
-        ) + 1
-      : 1;
+    const result =
+      this.predecessors.length > 0
+        ? apply(
+            Math.min,
+            this.predecessors.map((v) => v.depth(cache))
+          ) + 1
+        : 1;
     if (cache !== undefined) {
       cache[this.id] = result;
     }
@@ -64,6 +65,23 @@ export class Vertex {
       }
     }
     return null;
+  }
+
+  isDescendant(vertex: Vertex): boolean {
+    if (vertex === this) {
+      return true;
+    }
+    if (
+      vertex.successors.filter((successor) => this.isDescendant(successor))
+        .length > 0
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  get descendants(): Array<Vertex> {
+    return this.successors.concat(flatten(this.successors.map(successor => successor.descendants)));
   }
 
   get isAcyclic(): boolean {
@@ -101,13 +119,20 @@ export class DirectedGraph {
     return this.vertices.filter((v) => v.successors.length === 0).length;
   }
 
-  get data(): Array<{ id: number; name: string; predecessors?: number }> {
-    if (this.isTree) {
-      return this.vertices.map((v: Vertex) => ({
-        id: v.id,
-        name: v.name,
-        parent: v.predecessors[0]?.id,
-      }));
+  get data(): Array<
+    Array<{ id: number; name: string; predecessors?: number }>
+  > {
+    if (this.isTree || this.isMultiTree) {
+      return this.roots.map((root) =>
+        this.vertices
+          .filter((v) => v.isDescendant(root))
+          .map((v: Vertex) => ({
+            id: v.id,
+            name: v.name,
+            parent: v.predecessors[0]?.id,
+          }))
+      );
+    } else if (this.isMultiTree) {
     }
     return []; // TODO return directed graph
   }
@@ -120,7 +145,17 @@ export class DirectedGraph {
     if (this.roots.length !== 1) {
       return false;
     }
-    if (this.vertices.filter(v => v.predecessors.length > 1).length > 0) {
+    if (this.vertices.filter((v) => v.predecessors.length > 1).length > 0) {
+      return false;
+    }
+    return true;
+  }
+
+  get isMultiTree(): boolean {
+    if (this.roots.length < 2) {
+      return false;
+    }
+    if (this.vertices.filter((v) => v.predecessors.length > 1).length > 0) {
       return false;
     }
     return true;
@@ -169,13 +204,13 @@ export function parse(graph: string): DirectedGraph {
     }
     if (successorId === undefined) {
       successorId = ++id;
-      nameToVertex[successorName] = new Vertex(
-        successorId,
-        successorName,
-        [nameToVertex[predecessorName]] as Vertex[]
-      );
+      nameToVertex[successorName] = new Vertex(successorId, successorName, [
+        nameToVertex[predecessorName],
+      ] as Vertex[]);
     } else {
-      nameToVertex[successorName].predecessors.push(nameToVertex[predecessorName]);
+      nameToVertex[successorName].predecessors.push(
+        nameToVertex[predecessorName]
+      );
     }
     nameToVertex[predecessorName].successors.push(nameToVertex[successorName]);
   }
