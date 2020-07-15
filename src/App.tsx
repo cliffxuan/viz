@@ -14,7 +14,7 @@ import {
 } from "react-router-dom";
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
-import { parse, DirectedGraph } from "./parser";
+import { parse, DirectedGraph, Tree } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
 
@@ -153,20 +153,17 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           <Paper variant="outlined" className={classes.paper} square>
             <>
               {multiTrees.roots.map((root, index) => {
-                const cache = {};
-                const depth = root.descendants.map(v => v.depth(cache)).sort((a, b) => b - a)[0];
+                const tree = Tree.fromRoot(root);
+                const depth = tree.depth;
                 const width = depth === Infinity ? 600 : 120 * depth;
-                const breadth = root.descendants.map(
-                  (v) => v.successors.length === 0
-                ).length;
+                const breadth = tree.breadth;
                 const space = 30 * Math.E ** (-breadth / 40) + 7;
                 const height = breadth * space;
-                console.log("width:", width, "height:", height);
                 return (
                   <Vega
                     key={index}
                     spec={{ ...treeSpec, width, height }}
-                    data={{ tree: multiTrees.data[index] }}
+                    data={{ tree: tree.data }}
                   />
                 );
               })}

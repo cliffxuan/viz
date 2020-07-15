@@ -81,7 +81,9 @@ export class Vertex {
   }
 
   get descendants(): Array<Vertex> {
-    return this.successors.concat(flatten(this.successors.map(successor => successor.descendants)));
+    return this.successors.concat(
+      flatten(this.successors.map((successor) => successor.descendants))
+    );
   }
 
   get isAcyclic(): boolean {
@@ -104,7 +106,7 @@ export class DirectedGraph {
     this.vertices = vertices;
   }
 
-  get depth(): number {
+  public get depth(): number {
     if (!this.isAcyclic) {
       return Infinity;
     }
@@ -119,9 +121,7 @@ export class DirectedGraph {
     return this.vertices.filter((v) => v.successors.length === 0).length;
   }
 
-  get data(): Array<
-    Array<{ id: number; name: string; predecessors?: number }>
-  > {
+  get data(): Array<any> {
     if (this.isTree || this.isMultiTree) {
       return this.roots.map((root) =>
         this.vertices
@@ -132,7 +132,6 @@ export class DirectedGraph {
             parent: v.predecessors[0]?.id,
           }))
       );
-    } else if (this.isMultiTree) {
     }
     return []; // TODO return directed graph
   }
@@ -172,6 +171,27 @@ export class DirectedGraph {
       return this.roots[0].isAcyclic;
     }
     return true;
+  }
+}
+
+export class Tree extends DirectedGraph {
+  constructor(vertices: Array<Vertex>) {
+    super(vertices);
+    if (!this.isTree) {
+      throw new Error("invalid tree");
+    }
+  }
+
+  static fromRoot(root: Vertex): Tree {
+    return new Tree([root].concat(root.descendants));
+  }
+
+  get data(): Array<{ id: number; name: string; predecessors?: number }> {
+    return super.data[0] as Array<{
+      id: number;
+      name: string;
+      predecessors?: number;
+    }>;
   }
 }
 
