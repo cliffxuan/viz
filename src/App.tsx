@@ -14,6 +14,7 @@ import {
 } from "react-router-dom";
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
+import directedGraphSpec from "./ForceDirectedGraph";
 import { parse, DirectedGraph, Tree } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
@@ -130,9 +131,73 @@ type GraphProps = {
   handleSave(data: string): void;
 };
 
+function MultiTree({ multiTree }: { multiTree: DirectedGraph }) {
+  return (
+    <>
+      {multiTree.roots.map((root, index) => {
+        const tree = Tree.fromRoot(root);
+        const depth = tree.depth;
+        const width = depth === Infinity ? 600 : 120 * depth;
+        const breadth = tree.breadth;
+        const space = 30 * Math.E ** (-breadth / 40) + 7;
+        const height = breadth * space;
+        return (
+          <Vega
+            key={index}
+            spec={{ ...treeSpec, width, height }}
+            data={{ tree: tree.data }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function FDGraph({ graph }: { graph: DirectedGraph }) {
+  const width = 600;
+  const height = 600;
+  const data = {
+    nodes: [
+      {
+        name: "Myriel",
+        group: 1,
+        index: 0,
+      },
+      {
+        name: "Napoleon",
+        group: 1,
+        index: 1,
+      },
+      {
+        name: "Mlle.Baptistine",
+        group: 1,
+        index: 2,
+      },
+    ],
+    links: [
+      {
+        source: 1,
+        target: 0,
+        value: 1,
+      },
+      {
+        source: 2,
+        target: 0,
+        value: 8,
+      },
+    ],
+  };
+  return (
+    <Vega
+      spec={{ ...directedGraphSpec, width, height }}
+      data={ data }
+    />
+  );
+}
+
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
-  const multiTrees: DirectedGraph = parse(data);
+  const directedGraph: DirectedGraph = parse(data);
 
   return (
     <div className={classes.root}>
@@ -151,23 +216,11 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
       <Grid container spacing={1} className={classes.main}>
         <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <>
-              {multiTrees.roots.map((root, index) => {
-                const tree = Tree.fromRoot(root);
-                const depth = tree.depth;
-                const width = depth === Infinity ? 600 : 120 * depth;
-                const breadth = tree.breadth;
-                const space = 30 * Math.E ** (-breadth / 40) + 7;
-                const height = breadth * space;
-                return (
-                  <Vega
-                    key={index}
-                    spec={{ ...treeSpec, width, height }}
-                    data={{ tree: tree.data }}
-                  />
-                );
-              })}
-            </>
+            {directedGraph.isTree || directedGraph.isMultiTree ? (
+              <MultiTree multiTree={directedGraph} />
+            ) : (
+              <FDGraph graph={directedGraph} />
+            )}
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>

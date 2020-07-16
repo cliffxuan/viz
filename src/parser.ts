@@ -81,6 +81,7 @@ export class Vertex {
   }
 
   get descendants(): Array<Vertex> {
+    // TODO too much recursion
     return this.successors.concat(
       flatten(this.successors.map((successor) => successor.descendants))
     );

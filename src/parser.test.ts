@@ -110,6 +110,14 @@ test("parse cycle", () => {
   const cycle = parse(["A -> B;", "B -> A;"].join("\n"));
   expect(cycle.breadth).toEqual(0);
   expect(cycle.depth).toEqual(Infinity);
+  expect(cycle.data).toEqual([]);  // temp
+});
+
+test("parse cycle 2", () => {
+  const cycle = parse(["A -> B -> C;", "C -> B;"].join("\n"));
+  expect(cycle.breadth).toEqual(0);
+  expect(cycle.depth).toEqual(Infinity);
+  expect(cycle.data).toEqual([]);  // temp
 });
 
 describe("is acyclic", () => {
