@@ -4,7 +4,7 @@ import Typography from "@material-ui/core/Typography";
 import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
-import AceEditor from "react-ace";
+import Editor from "@monaco-editor/react";
 import firebase from "firebase/app";
 import {
   HashRouter as Router,
@@ -15,8 +15,6 @@ import {
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
 import { parse, DirectedGraph, Tree } from "./parser";
-
-import "ace-builds/src-noconflict/theme-github";
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -181,14 +179,19 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            <AceEditor
-              mode="plain_text"
-              placeholder="Root -> Parent -> Child;"
-              theme="github"
-              onChange={(value) => handleChange(value)}
+            <Editor
+              language="plain_text"
               value={data}
               width="100%"
-              height="100%"
+              editorDidMount={(_, editor) =>
+                editor.onDidChangeModelContent(() =>
+                  handleChange(editor.getValue())
+                )
+              }
+              options={{
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+              }}
             />
           </Paper>
         </Grid>
