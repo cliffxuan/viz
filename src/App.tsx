@@ -4,7 +4,7 @@ import Typography from "@material-ui/core/Typography";
 import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
-import Editor from "@monaco-editor/react";
+import Editor, { monaco, EditorDidMount } from "@monaco-editor/react";
 import firebase from "firebase/app";
 import {
   HashRouter as Router,
@@ -151,9 +151,31 @@ function MultiTree({ multiTree }: { multiTree: DirectedGraph }) {
   );
 }
 
+monaco.init().then((monaco) => {
+  console.log(
+    monaco.languages.registerCompletionItemProvider,
+    monaco.editor.defineTheme
+  );
+});
+
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
   const directedGraph: DirectedGraph = parse(data);
+  const handleEditorDidMount: EditorDidMount = (_, editor) => {
+    monaco.init().then((monaco) => {
+      monaco.editor.setModelMarkers(editor.getModel(), "owner", [
+        {
+          startLineNumber: 6,
+          startColumn: 9,
+          endLineNumber: 6,
+          endColumn: 16,
+          message: "Warning!",
+          severity: 8,
+        },
+      ]);
+    });
+    editor.onDidChangeModelContent(() => handleChange(editor.getValue()));
+  };
 
   return (
     <div className={classes.root}>
@@ -183,11 +205,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
               language="plain_text"
               value={data}
               width="100%"
-              editorDidMount={(_, editor) =>
-                editor.onDidChangeModelContent(() =>
-                  handleChange(editor.getValue())
-                )
-              }
+              editorDidMount={handleEditorDidMount}
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
