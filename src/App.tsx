@@ -14,7 +14,6 @@ import {
 } from "react-router-dom";
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
-import directedGraphSpec from "./ForceDirectedGraph";
 import { parse, DirectedGraph, Tree } from "./parser";
 
 import "ace-builds/src-noconflict/theme-github";
@@ -120,6 +119,7 @@ function GraphContainer({ docId }: GraphContainerProps) {
       handleSave={async (data) => {
         const id = makeid(6);
         await firestore.collection("graphs").doc(id).set({ graph: data });
+        setRedirect(id);
       }}
     />
   );
@@ -153,48 +153,6 @@ function MultiTree({ multiTree }: { multiTree: DirectedGraph }) {
   );
 }
 
-function FDGraph({ graph }: { graph: DirectedGraph }) {
-  const width = 600;
-  const height = 600;
-  const data = {
-    nodes: [
-      {
-        name: "Myriel",
-        group: 1,
-        index: 0,
-      },
-      {
-        name: "Napoleon",
-        group: 1,
-        index: 1,
-      },
-      {
-        name: "Mlle.Baptistine",
-        group: 1,
-        index: 2,
-      },
-    ],
-    links: [
-      {
-        source: 1,
-        target: 0,
-        value: 1,
-      },
-      {
-        source: 2,
-        target: 0,
-        value: 8,
-      },
-    ],
-  };
-  return (
-    <Vega
-      spec={{ ...directedGraphSpec, width, height }}
-      data={ data }
-    />
-  );
-}
-
 function Graph({ data, handleChange, handleSave }: GraphProps) {
   const classes = useStyles();
   const directedGraph: DirectedGraph = parse(data);
@@ -218,9 +176,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           <Paper variant="outlined" className={classes.paper} square>
             {directedGraph.isTree || directedGraph.isMultiTree ? (
               <MultiTree multiTree={directedGraph} />
-            ) : (
-              <FDGraph graph={directedGraph} />
-            )}
+            ) : null}
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>
