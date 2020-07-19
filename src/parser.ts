@@ -1,4 +1,5 @@
-import { concat, apply, flatten, zip, slice, uniq, values } from "ramda";
+import { apply, flatten, uniq } from "ramda";
+import {tokenize} from "./tokenizer";
 
 export class Vertex {
   id: number;
@@ -196,20 +197,8 @@ export class Tree extends DirectedGraph {
   }
 }
 
-export function toPairs(chain: string): Array<Array<string>> {
-  const nodes = chain.split("->").map((x: string) => x.trim());
-  return zip(nodes, slice(1, Infinity, nodes));
-}
-
 export function parse(graph: string): DirectedGraph {
-  const pairs = graph
-    .split("\n")
-    .map((row) => row.split(";"))
-    .reduce(concat, [])
-    .map((p) => p.trim())
-    .filter((p) => p !== "")
-    .map(toPairs)
-    .reduce(concat, []);
+  const pairs = Object.values(tokenize(graph)).map(p => p.pair);
   const nameToVertex: Record<string, Vertex> = {};
   let id = -1;
   for (const [predecessorName, successorName] of uniq(pairs)) {
@@ -235,5 +224,5 @@ export function parse(graph: string): DirectedGraph {
     }
     nameToVertex[predecessorName].successors.push(nameToVertex[successorName]);
   }
-  return new DirectedGraph(values(nameToVertex));
+  return new DirectedGraph(Object.values(nameToVertex));
 }

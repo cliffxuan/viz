@@ -169,8 +169,8 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
           startColumn: 9,
           endLineNumber: 6,
           endColumn: 16,
-          message: "Warning!",
-          severity: 8,
+          message: "Error!",
+          severity: monaco.MarkerSeverity.Error,
         },
       ]);
     });
