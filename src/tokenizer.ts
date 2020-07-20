@@ -5,7 +5,7 @@ export function toPairs(chain: string): Array<[string, string]> {
   return zip(nodes, slice(1, Infinity, nodes));
 }
 
-type Pair = {
+export type Pair = {
   pair: [string, string];
   startRow: number;
   endRow: number;
@@ -37,7 +37,7 @@ export function extractPairs(
     ([[prev, prevPos], [next, nextPos]]) => ({
       pair: [prev, next] as [string, string],
       startCol: startCol + prevPos - 1,
-      endCol: startCol + nextPos + next.length - 2,
+      endCol: startCol + nextPos + next.length - 1,
       startRow: rowNum,
       endRow: rowNum,
     })
@@ -51,4 +51,17 @@ export function tokenize(graph: string): Record<number, Pair> {
       .map(([arrow, startCol]) => extractPairs(arrow, startCol, index + 1))
   );
   return fromPairs(flatten(arrows).map((arrow, index) => [index, arrow]));
+}
+
+export function groupByPair(pairsWithPos: Record<number, Pair>) : Record<string, Array<Pair>> {
+  const pairToPos: Record<string, Array<Pair>> = {};
+  for (let ps of Object.values(pairsWithPos)) {
+    const { pair } = ps;
+    const key = `${pair[0]} -> ${pair[1]}`;
+    if (pairToPos[key] === undefined) {
+      pairToPos[key] = [];
+    }
+    pairToPos[key].push(ps);
+  }
+  return pairToPos;
 }

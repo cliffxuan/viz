@@ -1,5 +1,5 @@
-import { apply, flatten, uniq } from "ramda";
-import {tokenize} from "./tokenizer";
+import { apply, flatten } from "ramda";
+import { tokenize, Pair, groupByPair } from "./tokenizer";
 
 export class Vertex {
   id: number;
@@ -101,6 +101,18 @@ export class Vertex {
   }
 }
 
+export class Arrow {
+  constructor(public start: Vertex, public end: Vertex) {}
+
+  toString(): string {
+    return `${this.start.name} -> ${this.end.name}`;
+  }
+
+  toPair(): [string, string] {
+    return [this.start.name, this.end.name];
+  }
+}
+
 export class DirectedGraph {
   vertices: Array<Vertex>;
 
@@ -108,7 +120,13 @@ export class DirectedGraph {
     this.vertices = vertices;
   }
 
-  public get depth(): number {
+  get arrows(): Array<Arrow> {
+    return flatten(
+      this.vertices.map((v) => v.successors.map((e) => new Arrow(v, e)))
+    );
+  }
+
+  get depth(): number {
     if (!this.isAcyclic) {
       return Infinity;
     }
@@ -135,7 +153,7 @@ export class DirectedGraph {
           }))
       );
     }
-    return []; // TODO return directed graph
+    return []; // TODO find sub graph
   }
 
   get roots(): Array<Vertex> {
@@ -149,6 +167,9 @@ export class DirectedGraph {
     if (this.vertices.filter((v) => v.predecessors.length > 1).length > 0) {
       return false;
     }
+    if (this.vertices.filter((v) => v.predecessors.includes(v)).length > 0) {
+      return false;
+    }
     return true;
   }
 
@@ -157,6 +178,9 @@ export class DirectedGraph {
       return false;
     }
     if (this.vertices.filter((v) => v.predecessors.length > 1).length > 0) {
+      return false;
+    }
+    if (this.vertices.filter((v) => v.predecessors.includes(v)).length > 0) {
       return false;
     }
     return true;
@@ -173,6 +197,52 @@ export class DirectedGraph {
       return this.roots[0].isAcyclic;
     }
     return true;
+  }
+
+  findTree(): [DirectedGraph, Array<[string, string]>] {
+    if (this.isTree || this.isMultiTree) {
+      return [this, []];
+    }
+    const treePairs = [];
+    const restPairs = [];
+    let graph = new DirectedGraph([]);
+    for (let arrow of this.arrows) {
+      treePairs.push(arrow.toPair());
+      let newGraph = DirectedGraph.fromPairs(treePairs);
+      if (!(newGraph.isMultiTree || newGraph.isTree)) {
+        treePairs.pop();
+        restPairs.push(arrow.toPair());
+      } else {
+        graph = newGraph;
+      }
+    }
+    return [graph, restPairs];
+  }
+
+  static fromPairs(pairs: Array<[string, string]>): DirectedGraph {
+    const nameToVertex: Record<string, Vertex> = {};
+    let id = -1;
+    for (const [predecessorName, successorName] of pairs) {
+      let predecessorId = nameToVertex[predecessorName]?.id;
+      let successorId = nameToVertex[successorName]?.id;
+
+      if (predecessorId === undefined) {
+        predecessorId = ++id;
+        nameToVertex[predecessorName] = new Vertex(
+          predecessorId,
+          predecessorName
+        );
+      }
+      if (successorId === undefined) {
+        successorId = ++id;
+        nameToVertex[successorName] = new Vertex(successorId, successorName);
+      }
+      const successor = nameToVertex[successorName];
+      const predecessor = nameToVertex[predecessorName];
+      successor.predecessors.push(predecessor);
+      predecessor.successors.push(successor);
+    }
+    return new DirectedGraph(Object.values(nameToVertex));
   }
 }
 
@@ -197,32 +267,8 @@ export class Tree extends DirectedGraph {
   }
 }
 
-export function parse(graph: string): DirectedGraph {
-  const pairs = Object.values(tokenize(graph)).map(p => p.pair);
-  const nameToVertex: Record<string, Vertex> = {};
-  let id = -1;
-  for (const [predecessorName, successorName] of uniq(pairs)) {
-    let predecessorId = nameToVertex[predecessorName]?.id;
-    let successorId = nameToVertex[successorName]?.id;
-
-    if (predecessorId === undefined) {
-      predecessorId = ++id;
-      nameToVertex[predecessorName] = new Vertex(
-        predecessorId,
-        predecessorName
-      );
-    }
-    if (successorId === undefined) {
-      successorId = ++id;
-      nameToVertex[successorName] = new Vertex(successorId, successorName, [
-        nameToVertex[predecessorName],
-      ] as Vertex[]);
-    } else {
-      nameToVertex[successorName].predecessors.push(
-        nameToVertex[predecessorName]
-      );
-    }
-    nameToVertex[predecessorName].successors.push(nameToVertex[successorName]);
-  }
-  return new DirectedGraph(Object.values(nameToVertex));
+export function parse(graph: string): [DirectedGraph, Record<string, Pair[]>] {
+  const pairToPos: Record<string, Pair[]> = groupByPair(tokenize(graph));
+  const pairs = Object.values(pairToPos).map((p) => p[0].pair);
+  return [DirectedGraph.fromPairs(pairs), pairToPos];
 }

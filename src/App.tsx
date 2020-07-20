@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import { Vega } from "react-vega";
-import Editor, { monaco, EditorDidMount } from "@monaco-editor/react";
+import {
+  ControlledEditor as Editor,
+  monaco,
+  EditorDidMount,
+} from "@monaco-editor/react";
 import firebase from "firebase/app";
 import {
   HashRouter as Router,
@@ -15,6 +19,7 @@ import {
 import "firebase/firestore";
 import treeSpec from "./TreeSpec";
 import { parse, DirectedGraph, Tree } from "./parser";
+import { flatten } from "ramda";
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -151,30 +156,44 @@ function MultiTree({ multiTree }: { multiTree: DirectedGraph }) {
   );
 }
 
-monaco.init().then((monaco) => {
-  console.log(
-    monaco.languages.registerCompletionItemProvider,
-    monaco.editor.defineTheme
-  );
-});
+interface RefObject {
+  getModel: () => void;
+}
 
 function Graph({ data, handleChange, handleSave }: GraphProps) {
+  const editorRef = useRef<RefObject | null>(null);
   const classes = useStyles();
-  const directedGraph: DirectedGraph = parse(data);
-  const handleEditorDidMount: EditorDidMount = (_, editor) => {
-    monaco.init().then((monaco) => {
-      monaco.editor.setModelMarkers(editor.getModel(), "owner", [
-        {
-          startLineNumber: 6,
-          startColumn: 9,
-          endLineNumber: 6,
-          endColumn: 16,
-          message: "Error!",
-          severity: monaco.MarkerSeverity.Error,
-        },
-      ]);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  const [directedGraph, pairToPositions] = parse(data);
+  const [tree, rest] = directedGraph.findTree();
+  const errors = flatten(
+    rest.map((pair) => pairToPositions[`${pair[0]} -> ${pair[1]}`])
+  ).map(({ startRow, startCol, endRow, endCol }) => ({
+    startLineNumber: startRow,
+    startColumn: startCol,
+    endLineNumber: endRow,
+    endColumn: endCol,
+    message: "This arrow is discarded as it makes the tree invalid.",
+  }));
+
+  useLayoutEffect(() => {
+    monaco.init().then((monacoInstance) => {
+      if (isEditorReady && editorRef.current !== null) {
+        monacoInstance.editor.setModelMarkers(
+          editorRef.current.getModel(),
+          "owner",
+          errors.map((error) => ({
+            ...error,
+            severity: monacoInstance.MarkerSeverity.Error,
+          }))
+        );
+      }
     });
-    editor.onDidChangeModelContent(() => handleChange(editor.getValue()));
+  });
+
+  const handleEditorDidMount: EditorDidMount = (_, editor) => {
+    setIsEditorReady(true);
+    editorRef.current = editor;
   };
 
   return (
@@ -194,9 +213,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
       <Grid container spacing={1} className={classes.main}>
         <Grid item xs={12} md={8} className={classes.pane}>
           <Paper variant="outlined" className={classes.paper} square>
-            {directedGraph.isTree || directedGraph.isMultiTree ? (
-              <MultiTree multiTree={directedGraph} />
-            ) : null}
+            <MultiTree multiTree={tree} />
           </Paper>
         </Grid>
         <Grid item xs={12} md={4} className={classes.pane}>
@@ -206,6 +223,9 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
               value={data}
               width="100%"
               editorDidMount={handleEditorDidMount}
+              onChange={(_, value) =>
+                value === undefined ? value : handleChange(value)
+              }
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
