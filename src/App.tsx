@@ -167,7 +167,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
   const [directedGraph, pairToPositions] = parse(data);
   const [tree, rest] = directedGraph.findTree();
   const errors = flatten(
-    rest.map((pair) => pairToPositions[`${pair[0]} -> ${pair[1]}`])
+    rest.map((arrow) => pairToPositions[arrow.toString()])
   ).map(({ startRow, startCol, endRow, endCol }) => ({
     startLineNumber: startRow,
     startColumn: startCol,

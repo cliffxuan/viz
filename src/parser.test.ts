@@ -110,14 +110,14 @@ test("parse cycle", () => {
   const cycle = parse(["A -> B;", "B -> A;"].join("\n"))[0];
   expect(cycle.breadth).toEqual(0);
   expect(cycle.depth).toEqual(Infinity);
-  expect(cycle.data).toEqual([]);  // temp
+  expect(cycle.data).toEqual([]); // temp
 });
 
 test("parse cycle 2", () => {
   const cycle = parse(["A -> B -> C;", "C -> B;"].join("\n"))[0];
   expect(cycle.breadth).toEqual(0);
   expect(cycle.depth).toEqual(Infinity);
-  expect(cycle.data).toEqual([]);  // temp
+  expect(cycle.data).toEqual([]); // temp
 });
 
 describe("is acyclic", () => {
@@ -214,26 +214,35 @@ describe("arrows", () => {
   each([
     [["A -> A"], ["A -> A"]],
     [["A -> B"], ["A -> B"]],
-    [["A -> B", "B -> C"], ["A -> B", "B -> C"]],
+    [
+      ["A -> B", "B -> C"],
+      ["A -> B", "B -> C"],
+    ],
     [["A -> B -> C"], ["A -> B", "B -> C"]],
-    [["A -> B -> C", "C -> D"], ["A -> B", "B -> C", "C -> D"]],
+    [
+      ["A -> B -> C", "C -> D"],
+      ["A -> B", "B -> C", "C -> D"],
+    ],
   ]).test("%s %s", (input, output) => {
     const tree = parse(input.join("\n"))[0];
-    expect(tree.arrows.map(a => a.toString())).toEqual(output);
+    expect(tree.arrows.map((a) => a.toString())).toEqual(output);
   });
-})
+});
 
 describe("findTree", () => {
   each([
-    // [[], [], []],
-    // [["A -> B;"], ["A -> B"], []],
-    // [["A -> B;", "B -> A;"], ["A -> B"], [["B", "A"]]],
-    // [["A -> B;", "B -> C;", "C -> B;"], ["A -> B", "B -> C"], [["C",  "B"]]],
-    [["A -> B;", "A -> A;", "C -> D;"], ["A -> B", "C -> D"], [["A", "A"]]]
-  ]).test("%s is composed of tree %s and %s", (arrows, treeArrows, restArrows) => {
-    const graph = parse(arrows.join("\n"))[0];
-    const [tree, rest] = graph.findTree();
-    expect(tree).toEqual(parse(treeArrows.join("\n"))[0]);
-    expect(rest).toEqual(restArrows);
-  });
-}); 
+    [[], [], []],
+    [["A -> B;"], ["A -> B"], []],
+    [["A -> B;", "B -> A;"], ["A -> B"], [["B", "A"]]],
+    [["A -> B;", "B -> C;", "C -> B;"], ["A -> B", "B -> C"], [["C",  "B"]]],
+    [["A -> B;", "A -> A;", "C -> D;"], ["A -> B", "C -> D"], [["A", "A"]]],
+  ]).test(
+    "%s is composed of tree %s and %s",
+    (arrows, treeArrows, restArrows) => {
+      const graph = parse(arrows.join("\n"))[0];
+      const [tree, rest] = graph.findTree();
+      expect(tree).toEqual(parse(treeArrows.join("\n"))[0]);
+      expect(rest.map((a) => a.toPair())).toEqual(restArrows);
+    }
+  );
+});

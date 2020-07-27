@@ -1,5 +1,5 @@
 import { apply, flatten } from "ramda";
-import { tokenize, Pair, groupByPair } from "./tokenizer";
+import { tokenize, Arrow, ArrowWithPosition, groupByArrow } from "./tokenizer";
 
 export class Vertex {
   id: number;
@@ -101,18 +101,6 @@ export class Vertex {
   }
 }
 
-export class Arrow {
-  constructor(public start: Vertex, public end: Vertex) {}
-
-  toString(): string {
-    return `${this.start.name} -> ${this.end.name}`;
-  }
-
-  toPair(): [string, string] {
-    return [this.start.name, this.end.name];
-  }
-}
-
 export class DirectedGraph {
   vertices: Array<Vertex>;
 
@@ -122,7 +110,7 @@ export class DirectedGraph {
 
   get arrows(): Array<Arrow> {
     return flatten(
-      this.vertices.map((v) => v.successors.map((e) => new Arrow(v, e)))
+      this.vertices.map((v) => v.successors.map((e) => new Arrow(v.name, e.name)))
     );
   }
 
@@ -199,30 +187,32 @@ export class DirectedGraph {
     return true;
   }
 
-  findTree(): [DirectedGraph, Array<[string, string]>] {
+  findTree(): [DirectedGraph, Array<Arrow>] {
     if (this.isTree || this.isMultiTree) {
       return [this, []];
     }
-    const treePairs = [];
-    const restPairs = [];
+    const treeArrows = [];
+    const restArrows = [];
     let graph = new DirectedGraph([]);
     for (let arrow of this.arrows) {
-      treePairs.push(arrow.toPair());
-      let newGraph = DirectedGraph.fromPairs(treePairs);
+      treeArrows.push(arrow);
+      let newGraph = DirectedGraph.fromArrows(treeArrows);
       if (!(newGraph.isMultiTree || newGraph.isTree)) {
-        treePairs.pop();
-        restPairs.push(arrow.toPair());
+        treeArrows.pop();
+        restArrows.push(arrow);
       } else {
         graph = newGraph;
       }
     }
-    return [graph, restPairs];
+    return [graph, restArrows];
   }
 
-  static fromPairs(pairs: Array<[string, string]>): DirectedGraph {
+  static fromArrows(arrows: Array<Arrow>): DirectedGraph {
     const nameToVertex: Record<string, Vertex> = {};
     let id = -1;
-    for (const [predecessorName, successorName] of pairs) {
+    for (const arrow of arrows) {
+      const predecessorName = arrow.start;
+      const successorName = arrow.end;
       let predecessorId = nameToVertex[predecessorName]?.id;
       let successorId = nameToVertex[successorName]?.id;
 
@@ -280,8 +270,8 @@ export class Tree {
   }
 }
 
-export function parse(graph: string): [DirectedGraph, Record<string, Pair[]>] {
-  const pairToPos: Record<string, Pair[]> = groupByPair(tokenize(graph));
-  const pairs = Object.values(pairToPos).map((p) => p[0].pair);
-  return [DirectedGraph.fromPairs(pairs), pairToPos];
+export function parse(graph: string): [DirectedGraph, Record<string, ArrowWithPosition[]>] {
+  const arrowToPos: Record<string, ArrowWithPosition[]> = groupByArrow(tokenize(graph));
+  const arrows = Object.values(arrowToPos).map((p) => p[0].arrow);
+  return [DirectedGraph.fromArrows(arrows), arrowToPos];
 }

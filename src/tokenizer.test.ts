@@ -1,4 +1,10 @@
-import { tokenize, splitWith, extractPairs, groupByPair } from "./tokenizer";
+import {
+  tokenize,
+  splitWith,
+  extractPairs,
+  groupByArrow,
+  Arrow,
+} from "./tokenizer";
 import each from "jest-each";
 
 describe("tokenize", () => {
@@ -6,15 +12,27 @@ describe("tokenize", () => {
     [
       ["a -> b;"],
       {
-        0: { pair: ["a", "b"], startRow: 1, endRow: 1, startCol: 1, endCol: 7 },
+        0: {
+          arrow: new Arrow("a", "b"),
+          startRow: 1,
+          endRow: 1,
+          startCol: 1,
+          endCol: 7,
+        },
       },
     ],
     [
       ["a -> b -> c;"],
       {
-        0: { pair: ["a", "b"], startRow: 1, endRow: 1, startCol: 1, endCol: 7 },
+        0: {
+          arrow: new Arrow("a", "b"),
+          startRow: 1,
+          endRow: 1,
+          startCol: 1,
+          endCol: 7,
+        },
         1: {
-          pair: ["b", "c"],
+          arrow: new Arrow("b", "c"),
           startRow: 1,
           endRow: 1,
           startCol: 6,
@@ -25,8 +43,20 @@ describe("tokenize", () => {
     [
       ["a -> b;", "b -> c;"],
       {
-        0: { pair: ["a", "b"], startRow: 1, endRow: 1, startCol: 1, endCol: 7 },
-        1: { pair: ["b", "c"], startRow: 2, endRow: 2, startCol: 1, endCol: 7 },
+        0: {
+          arrow: new Arrow("a", "b"),
+          startRow: 1,
+          endRow: 1,
+          startCol: 1,
+          endCol: 7,
+        },
+        1: {
+          arrow: new Arrow("b", "c"),
+          startRow: 2,
+          endRow: 2,
+          startCol: 1,
+          endCol: 7,
+        },
       },
     ],
   ]).test("tokenize %s into %s", (rows, tokens) => {
@@ -75,7 +105,7 @@ describe("extractPairs", () => {
       1,
       [
         {
-          pair: ["abc", "def"],
+          arrow: new Arrow("abc", "def"),
           startCol: 1,
           endCol: 11,
           startRow: 1,
@@ -89,14 +119,14 @@ describe("extractPairs", () => {
       2,
       [
         {
-          pair: ["abc", "def"],
+          arrow: new Arrow("abc", "def"),
           startCol: 5,
           endCol: 15,
           startRow: 2,
           endRow: 2,
         },
         {
-          pair: ["def", "ghi"],
+          arrow: new Arrow("def", "ghi"),
           startCol: 12,
           endCol: 22,
           startRow: 2,
@@ -112,16 +142,22 @@ describe("extractPairs", () => {
   );
 });
 
-describe("groupByPair", () => {
+describe("groupByArrow", () => {
   each([
     [
       {
-        0: { pair: ["a", "b"], startRow: 1, endRow: 1, startCol: 1, endCol: 7 },
+        0: {
+          arrow: new Arrow("a", "b"),
+          startRow: 1,
+          endRow: 1,
+          startCol: 1,
+          endCol: 7,
+        },
       },
       {
         "a -> b": [
           {
-            pair: ["a", "b"],
+            arrow: new Arrow( "a", "b" ),
             startRow: 1,
             endRow: 1,
             startCol: 1,
@@ -132,21 +168,39 @@ describe("groupByPair", () => {
     ],
     [
       {
-        0: { pair: ["a", "b"], startRow: 1, endRow: 1, startCol: 1, endCol: 7 },
-        1: { pair: ["b", "c"], startRow: 2, endRow: 2, startCol: 1, endCol: 7 },
-        2: { pair: ["a", "b"], startRow: 3, endRow: 3, startCol: 4, endCol: 9 },
+        0: {
+          arrow: new Arrow("a", "b"),
+          startRow: 1,
+          endRow: 1,
+          startCol: 1,
+          endCol: 7,
+        },
+        1: {
+          arrow: new Arrow("b", "c"),
+          startRow: 2,
+          endRow: 2,
+          startCol: 1,
+          endCol: 7,
+        },
+        2: {
+          arrow: new Arrow("a", "b"),
+          startRow: 3,
+          endRow: 3,
+          startCol: 4,
+          endCol: 9,
+        },
       },
       {
         "a -> b": [
           {
-            pair: ["a", "b"],
+            arrow: new Arrow("a", "b"),
             startRow: 1,
             endRow: 1,
             startCol: 1,
             endCol: 7,
           },
           {
-            pair: ["a", "b"],
+            arrow: new Arrow("a", "b"),
             startRow: 3,
             endRow: 3,
             startCol: 4,
@@ -155,7 +209,7 @@ describe("groupByPair", () => {
         ],
         "b -> c": [
           {
-            pair: ["b", "c"],
+            arrow: new Arrow("b", "c"),
             startRow: 2,
             endRow: 2,
             startCol: 1,
@@ -164,8 +218,8 @@ describe("groupByPair", () => {
         ],
       },
     ],
-  ]).test("groupByPair %s into %s", (pairsWithPos, result) => {
-    expect(groupByPair(pairsWithPos)).toEqual(result);
+  ]).test("groupByArrow %s into %s", (pairsWithPos, result) => {
+    expect(groupByArrow(pairsWithPos)).toEqual(result);
   });
 });
 

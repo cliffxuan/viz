@@ -5,8 +5,20 @@ export function toPairs(chain: string): Array<[string, string]> {
   return zip(nodes, slice(1, Infinity, nodes));
 }
 
-export type Pair = {
-  pair: [string, string];
+export class Arrow {
+  constructor(public start: string, public end: string) {}
+
+  toString(): string {
+    return `${this.start} -> ${this.end}`;
+  }
+
+  toPair(): [string, string] {
+    return [this.start, this.end];
+  }
+}
+
+export type ArrowWithPosition = {
+  arrow: Arrow;
   startRow: number;
   endRow: number;
   startCol: number;
@@ -31,11 +43,11 @@ export function extractPairs(
   chain: string,
   startCol: number,
   rowNum: number
-): Array<Pair> {
+): Array<ArrowWithPosition> {
   const nodes = splitWith(chain, "->");
   return zip(nodes, nodes.slice(1)).map(
     ([[prev, prevPos], [next, nextPos]]) => ({
-      pair: [prev, next] as [string, string],
+      arrow: new Arrow(prev, next),
       startCol: startCol + prevPos - 1,
       endCol: startCol + nextPos + next.length - 1,
       startRow: rowNum,
@@ -44,7 +56,7 @@ export function extractPairs(
   );
 }
 
-export function tokenize(graph: string): Record<number, Pair> {
+export function tokenize(graph: string): Record<number, ArrowWithPosition> {
   const arrows = graph.split("\n").map((chain, index) =>
     splitWith(chain, ";")
       .filter(([p, _]) => p.trim() !== "")
@@ -53,15 +65,17 @@ export function tokenize(graph: string): Record<number, Pair> {
   return fromPairs(flatten(arrows).map((arrow, index) => [index, arrow]));
 }
 
-export function groupByPair(pairsWithPos: Record<number, Pair>) : Record<string, Array<Pair>> {
-  const pairToPos: Record<string, Array<Pair>> = {};
-  for (let ps of Object.values(pairsWithPos)) {
-    const { pair } = ps;
-    const key = `${pair[0]} -> ${pair[1]}`;
-    if (pairToPos[key] === undefined) {
-      pairToPos[key] = [];
+export function groupByArrow(
+  arrowsWithPos: Record<number, ArrowWithPosition>
+): Record<string, Array<ArrowWithPosition>> {
+  const arrowToPositions: Record<string, Array<ArrowWithPosition>> = {};
+  for (let ps of Object.values(arrowsWithPos)) {
+    const { arrow } = ps;
+    const key = arrow.toString()
+    if (arrowToPositions[key] === undefined) {
+      arrowToPositions[key] = [];
     }
-    pairToPos[key].push(ps);
+    arrowToPositions[key].push(ps);
   }
-  return pairToPos;
+  return arrowToPositions;
 }
