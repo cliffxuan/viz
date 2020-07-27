@@ -246,24 +246,37 @@ export class DirectedGraph {
   }
 }
 
-export class Tree extends DirectedGraph {
-  constructor(vertices: Array<Vertex>) {
-    super(vertices);
-    if (!this.isTree) {
-      throw new Error("invalid tree");
-    }
-  }
+export class Tree {
+  constructor(public vertices: Array<Vertex>) {}
 
   static fromRoot(root: Vertex): Tree {
     return new Tree([root].concat(root.descendants));
   }
 
+  get root(): Vertex {
+    return this.vertices.filter((v) => v.predecessors.length === 0)[0];
+  }
+
   get data(): Array<{ id: number; name: string; predecessors?: number }> {
-    return super.data[0] as Array<{
-      id: number;
-      name: string;
-      predecessors?: number;
-    }>;
+    return this.vertices
+      .filter((v) => v.isDescendant(this.root))
+      .map((v: Vertex) => ({
+        id: v.id,
+        name: v.name,
+        parent: v.predecessors[0]?.id,
+      }));
+  }
+
+  get depth(): number {
+    const cache = {};
+    return apply(
+      Math.max,
+      this.vertices.map((v) => v.depth(cache))
+    );
+  }
+
+  get breadth(): number {
+    return this.vertices.filter((v) => v.successors.length === 0).length;
   }
 }
 
