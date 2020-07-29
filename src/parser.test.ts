@@ -1,123 +1,115 @@
-import { parse } from "./parser";
+import { parse, Tree } from "./parser";
 import each from "jest-each";
 
-test("parse graph basic", () => {
-  const tree = parse("A -> B")[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(2);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph basic with semi colon", () => {
-  const tree = parse("A -> B;")[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(2);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph two pairs", () => {
-  const tree = parse(["A -> B;", "A -> C;"].join("\n"))[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-    { id: 2, name: "C", parent: 0 },
-  ]);
-  expect(tree.breadth).toEqual(2);
-  expect(tree.depth).toEqual(2);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph two levels", () => {
-  const tree = parse(["A -> B;", "B -> C;"].join("\n"))[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-    { id: 2, name: "C", parent: 1 },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(3);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph two levels reversed", () => {
-  const tree = parse(["B -> C;", "A -> B;"].join("\n"))[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "B", parent: 2 },
-    { id: 1, name: "C", parent: 0 },
-    { id: 2, name: "A" },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(3);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph two levels chained", () => {
-  const tree = parse(["A -> B -> C;"].join("\n"))[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-    { id: 2, name: "C", parent: 1 },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(3);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph no semi colon", () => {
-  const tree = parse(["A -> B", "B -> C"].join("\n"))[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "A" },
-    { id: 1, name: "B", parent: 0 },
-    { id: 2, name: "C", parent: 1 },
-  ]);
-  expect(tree.breadth).toEqual(1);
-  expect(tree.depth).toEqual(3);
-  expect(tree.roots.map((v) => v.name)).toEqual(["A"]);
-});
-
-test("parse graph repeated link", () => {
-  const tree = parse(
+describe("parse tree", () => {
+  each([
     [
-      "Root -> A -> A0;",
-      "Root -> A -> A1;",
-      "Root -> B -> B0;",
-      "Root -> B -> B1;",
-    ].join("\n")
-  )[0];
-  expect(tree.data[0]).toEqual([
-    { id: 0, name: "Root" },
-    { id: 1, name: "A", parent: 0 },
-    { id: 2, name: "A0", parent: 1 },
-    { id: 3, name: "A1", parent: 1 },
-    { id: 4, name: "B", parent: 0 },
-    { id: 5, name: "B0", parent: 4 },
-    { id: 6, name: "B1", parent: 4 },
-  ]);
-  expect(tree.breadth).toEqual(4);
-  expect(tree.depth).toEqual(3);
-  expect(tree.roots.map((v) => v.name)).toEqual(["Root"]);
-});
-
-test("parse cycle", () => {
-  const cycle = parse(["A -> B;", "B -> A;"].join("\n"))[0];
-  expect(cycle.breadth).toEqual(0);
-  expect(cycle.depth).toEqual(Infinity);
-  expect(cycle.data).toEqual([]); // temp
-});
-
-test("parse cycle 2", () => {
-  const cycle = parse(["A -> B -> C;", "C -> B;"].join("\n"))[0];
-  expect(cycle.breadth).toEqual(0);
-  expect(cycle.depth).toEqual(Infinity);
-  expect(cycle.data).toEqual([]); // temp
+      ["A -> B"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+      ],
+      1,
+      2,
+      "A",
+    ],
+    [
+      ["A -> B;"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+      ],
+      1,
+      2,
+      "A",
+    ],
+    [
+      ["A -> B;", "A -> C;"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+        { id: 2, name: "C", parent: 0 },
+      ],
+      2,
+      2,
+      "A",
+    ],
+    [
+      ["A -> B;", "B -> C;"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+        { id: 2, name: "C", parent: 1 },
+      ],
+      1,
+      3,
+      "A",
+    ],
+    [
+      ["B -> C;", "A -> B;"],
+      [
+        { id: 0, name: "B", parent: 2 },
+        { id: 1, name: "C", parent: 0 },
+        { id: 2, name: "A" },
+      ],
+      1,
+      3,
+      "A",
+    ],
+    [
+      ["A -> B -> C;"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+        { id: 2, name: "C", parent: 1 },
+      ],
+      1,
+      3,
+      "A",
+    ],
+    [
+      ["A -> B", "B -> C;"],
+      [
+        { id: 0, name: "A" },
+        { id: 1, name: "B", parent: 0 },
+        { id: 2, name: "C", parent: 1 },
+      ],
+      1,
+      3,
+      "A",
+    ],
+    [
+      [
+        "Root -> A -> A0;",
+        "Root -> A -> A1;",
+        "Root -> B -> B0;",
+        "Root -> B -> B1;",
+      ],
+      [
+        { id: 0, name: "Root" },
+        { id: 1, name: "A", parent: 0 },
+        { id: 2, name: "A0", parent: 1 },
+        { id: 3, name: "A1", parent: 1 },
+        { id: 4, name: "B", parent: 0 },
+        { id: 5, name: "B0", parent: 4 },
+        { id: 6, name: "B1", parent: 4 },
+      ],
+      4,
+      3,
+      "Root",
+    ],
+  ]).test(
+    "%s is parsed as %s, breadth=%s, depth=%s, roots=%s",
+    (graph, data, breadth, depth, root) => {
+      const dGraph = parse(graph.join("\n"))[0];
+      expect(dGraph.isTree).toBe(true);
+      const tree = new Tree(dGraph.vertices);
+      expect(tree.data).toEqual(data);
+      expect(tree.breadth).toEqual(breadth);
+      expect(tree.depth).toEqual(depth);
+      expect(tree.root.name).toBe(root);
+    }
+  );
 });
 
 describe("is acyclic", () => {
@@ -129,8 +121,12 @@ describe("is acyclic", () => {
     [["A -> B;", "A -> C;", "B -> C;"], true],
     [["A -> B;", "B -> C;", "C -> A;"], false],
   ]).test("%s is acyclic? %s", (edges, isAcyclic) => {
-    const tree = parse(edges.join("\n"))[0];
-    expect(tree.isAcyclic).toBe(isAcyclic);
+    const dGraph = parse(edges.join("\n"))[0];
+    expect(dGraph.isAcyclic).toBe(isAcyclic);
+    if (!isAcyclic) {
+      expect(dGraph.breadth).toEqual(0);
+      expect(dGraph.depth).toEqual(Infinity)
+    }
   });
 });
 
@@ -234,7 +230,7 @@ describe("findTree", () => {
     [[], [], []],
     [["A -> B;"], ["A -> B"], []],
     [["A -> B;", "B -> A;"], ["A -> B"], [["B", "A"]]],
-    [["A -> B;", "B -> C;", "C -> B;"], ["A -> B", "B -> C"], [["C",  "B"]]],
+    [["A -> B;", "B -> C;", "C -> B;"], ["A -> B", "B -> C"], [["C", "B"]]],
     [["A -> B;", "A -> A;", "C -> D;"], ["A -> B", "C -> D"], [["A", "A"]]],
   ]).test(
     "%s is composed of tree %s and %s",

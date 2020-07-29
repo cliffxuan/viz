@@ -129,21 +129,6 @@ export class DirectedGraph {
     return this.vertices.filter((v) => v.successors.length === 0).length;
   }
 
-  get data(): Array<any> {
-    if (this.isTree || this.isMultiTree) {
-      return this.roots.map((root) =>
-        this.vertices
-          .filter((v) => v.isDescendant(root))
-          .map((v: Vertex) => ({
-            id: v.id,
-            name: v.name,
-            parent: v.predecessors[0]?.id,
-          }))
-      );
-    }
-    return []; // TODO find sub graph
-  }
-
   get roots(): Array<Vertex> {
     return this.vertices.filter((v) => v.predecessors.length === 0);
   }

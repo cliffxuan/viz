@@ -1,9 +1,4 @@
-import { flatten, zip, slice, fromPairs } from "ramda";
-
-export function toPairs(chain: string): Array<[string, string]> {
-  const nodes = chain.split("->").map((x: string) => x.trim());
-  return zip(nodes, slice(1, Infinity, nodes));
-}
+import { flatten, zip, fromPairs } from "ramda";
 
 export class Arrow {
   constructor(public start: string, public end: string) {}
