@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import { Grid, Paper, AppBar, Toolbar, Button } from "@material-ui/core";
+import { Grid, Paper, AppBar, Toolbar, Button, IconButton } from "@material-ui/core";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
+import GitHubIcon from "@material-ui/icons/GitHub";
 import { Vega } from "react-vega";
 import {
   ControlledEditor as Editor,
@@ -24,7 +25,7 @@ import { flatten } from "ramda";
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     root: {
-      height: "100vh",
+      height: "calc(100vh - 10px)",
       display: "flex",
       flexDirection: "column",
     },
@@ -34,6 +35,9 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     saveButton: {
       marginLeft: theme.spacing(6),
+    },
+    toolbarRightDiv: {
+      marginLeft: "auto",
     },
     main: {
       flexGrow: 1,
@@ -208,6 +212,15 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
             <SaveOutlinedIcon />
             save
           </Button>
+          <div className={classes.toolbarRightDiv}>
+            <IconButton
+              href="https://github.com/cliffxuan/viz"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <GitHubIcon />
+            </IconButton>
+          </div>
         </Toolbar>
       </AppBar>
       <Grid container spacing={1} className={classes.main}>
