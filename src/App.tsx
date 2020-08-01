@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import { Grid, Paper, AppBar, Toolbar, Button, IconButton } from "@material-ui/core";
+import {
+  Grid,
+  Paper,
+  AppBar,
+  Toolbar,
+  Button,
+  IconButton,
+} from "@material-ui/core";
+import useMediaQuery from "@material-ui/core/useMediaQuery";
+import { useTheme } from "@material-ui/core/styles";
 import SaveOutlinedIcon from "@material-ui/icons/SaveOutlined";
 import GitHubIcon from "@material-ui/icons/GitHub";
+import FullscreenIcon from "@material-ui/icons/Fullscreen";
+import FullscreenExitIcon from "@material-ui/icons/FullscreenExit";
 import { Vega } from "react-vega";
 import {
   ControlledEditor as Editor,
@@ -39,6 +50,11 @@ const useStyles = makeStyles((theme: Theme) => {
     toolbarRightDiv: {
       marginLeft: "auto",
     },
+    toggleButton: {
+      position: "absolute",
+      top: "2px",
+      right: "2px",
+    },
     main: {
       flexGrow: 1,
       flexDirection: "row-reverse",
@@ -52,6 +68,10 @@ const useStyles = makeStyles((theme: Theme) => {
       color: theme.palette.text.secondary,
       height: "100%",
       overflow: "auto",
+    },
+    center: {
+      width: "50%",
+      margin: "auto",
     },
   });
 });
@@ -168,6 +188,7 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
   const editorRef = useRef<RefObject | null>(null);
   const classes = useStyles();
   const [isEditorReady, setIsEditorReady] = useState(false);
+  const [hideEditor, setHideEditor] = useState(false);
   const [directedGraph, pairToPositions] = parse(data);
   const [tree, rest] = directedGraph.findTree();
   const errors = flatten(
@@ -200,15 +221,15 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
     editorRef.current = editor;
   };
 
+  const theme = useTheme();
+  const isOneColumn = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <div className={classes.root}>
       <AppBar position="static" className={classes.appBar} elevation={1}>
         <Toolbar>
           <Typography variant="h6">Visualize Hierarchical Data</Typography>
-          <Button
-            className={classes.saveButton}
-            onClick={() => handleSave(data)}
-          >
+          <Button className={classes.saveButton}>
             <SaveOutlinedIcon />
             save
           </Button>
@@ -224,28 +245,47 @@ function Graph({ data, handleChange, handleSave }: GraphProps) {
         </Toolbar>
       </AppBar>
       <Grid container spacing={1} className={classes.main}>
-        <Grid item xs={12} md={8} className={classes.pane}>
+        <Grid
+          item
+          xs={12}
+          md={hideEditor ? 12 : 8}
+          className={classes.pane}
+          style={{ position: "relative" }}
+        >
           <Paper variant="outlined" className={classes.paper} square>
-            <MultiTree multiTree={tree} />
+            <div className={hideEditor ? classes.center : ""}>
+              <MultiTree multiTree={tree} />
+            </div>
           </Paper>
+          {isOneColumn ? null : (
+            <IconButton
+              className={classes.toggleButton}
+              size="small"
+              onClick={() => setHideEditor(!hideEditor)}
+            >
+              {hideEditor ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            </IconButton>
+          )}
         </Grid>
-        <Grid item xs={12} md={4} className={classes.pane}>
-          <Paper variant="outlined" className={classes.paper} square>
-            <Editor
-              language="plain_text"
-              value={data}
-              width="100%"
-              editorDidMount={handleEditorDidMount}
-              onChange={(_, value) =>
-                value === undefined ? value : handleChange(value)
-              }
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-              }}
-            />
-          </Paper>
-        </Grid>
+        {hideEditor ? null : (
+          <Grid item xs={12} md={4} className={classes.pane}>
+            <Paper variant="outlined" className={classes.paper} square>
+              <Editor
+                language="plain_text"
+                value={data}
+                width="100%"
+                editorDidMount={handleEditorDidMount}
+                onChange={(_, value) =>
+                  value === undefined ? value : handleChange(value)
+                }
+                options={{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                }}
+              />
+            </Paper>
+          </Grid>
+        )}
       </Grid>
     </div>
   );
