@@ -176,17 +176,17 @@ export class DirectedGraph {
     if (this.isTree || this.isMultiTree) {
       return [this, []];
     }
-    const treeArrows = [];
-    const restArrows = [];
-    let graph = new DirectedGraph([]);
+    const treeArrows: Array<Arrow> = [];
+    const restArrows: Array<Arrow> = [];
+    let graph = DirectedGraph.fromArrows(treeArrows);
     for (let arrow of this.arrows) {
       treeArrows.push(arrow);
       let newGraph = DirectedGraph.fromArrows(treeArrows);
-      if (!(newGraph.isMultiTree || newGraph.isTree)) {
+      if (newGraph.isMultiTree || newGraph.isTree) {
+        graph = newGraph;
+      } else {
         treeArrows.pop();
         restArrows.push(arrow);
-      } else {
-        graph = newGraph;
       }
     }
     return [graph, restArrows];
